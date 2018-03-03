@@ -108,7 +108,7 @@ def handle_calculate_IK(req):
                     req.poses[x].orientation.z, req.poses[x].orientation.w])
 
             ### Your IK code here
-	        ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
+	    ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
 
             EE = Matrix([[px], [py], [pz]])
 
