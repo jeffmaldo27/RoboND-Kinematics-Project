@@ -1,101 +1,218 @@
-[![Udacity - Robotics NanoDegree Program](https://s3-us-west-1.amazonaws.com/udacity-robotics/Extra+Images/RoboND_flag.png)](https://www.udacity.com/robotics)
-# Robotic arm - Pick & Place project
+[//]: # (Image References)
+[image1]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc1.png?raw=true
+[image2]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc2.png?raw=tru
+[image3]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc3.png?raw=true
+[image4]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc4.PNG?raw=true
+[image5]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc5.png?raw=true
+[image6]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc6.png?raw=true
+[image7]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc7.png?raw=true
 
-Make sure you are using robo-nd VM or have Ubuntu+ROS installed locally.
+## Project: Kinematics Pick & Place
+![alt text][image2]
+# Introduction
+---
+The purpose of this project was to calculate and program joint angles for a six degree of freedom kuka KR210 serial manipulator. The position and orientation of its end effector were provided in a 3-D space. This project uses a Ros environment with Gazebo simulation platform as well as Rviz MoveIt motion planning framework. The intent for the manipulator is to pick up a cylinder from a random location on a shelf and drop it into a bin next to the kuka manipulator.
 
-### One time Gazebo setup step:
-Check the version of gazebo installed on your system using a terminal:
-```sh
-$ gazebo --version
+
+### Kinematic Analysis
+#### 1. Run the forward_kinematics demo and evaluate the kr210.urdf.xacro file to perform kinematic analysis of Kuka KR210 robot and derive its DH parameters.
+![alt text][image6]
+
+Reference frame assignments in URDF file:
+Joint Name | Parent Link | Child Link | x(m) | y(m) | z(m)
+--- | --- | --- | --- | --- | ---
+joint_1 | base_link | link_1 | 0 | 0 | 0.33
+joint_2 | link_1 | link_2 | 0.35 | 0 | 0.42
+joint_3 | link_2 | link_3 | 0 | 0 | 1.25
+joint_4 | link_3 | link_4 | 0.96 | 0 | -0.054
+joint_5 | link_4 | link_5 | 0.54 | 0 | 0
+joint_6 | link_5 | link_6 | 0.193 | 0 | 0
+gripper-joint | link_6 | gripper_link | 0.11 | 0 | 0
+
+DH Parameters table obtained:
+Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
+--- | --- | --- | --- | ---
+0->1 | 0 | 0 | - | q1
+1->2 | - pi/2 | 0.35 | 0.75 | -pi/2 + q2
+2->3 | 0 | 1.25 | 0 | q3
+3->4 |  -pi/2 | -0.054 | 0 | q4
+4->5 | pi/2 | 0 | 1.5 | q5
+5->6 | -pi/2 | 0 | 0 | q6
+6->EE | 0 | 0 | 0.303 | 0
+
+By looking at the kr210.urdf.xacro file we need to determine which relative offset definition between the joints in the urdf file corresponds to their respective DH-parameter. We then extract the DH parameters and anotate them on the table.
+
+#### 2. Using the DH parameter table, you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
+
+Every joint requires its own transformation matrix which describes the joints position and orientation relative to its prior joint. In order to calculate this matrix, we substitute the DH parameters from the previous table into `TF_Matrix` function:
+```python
+def TF_Matrix(alpha, a, d, q):
+    TF = Matrix([[cos(q), -sin(q), 0, a],
+     [sin(q)*cos(alpha), cos(q)*cos(alpha), -sin(alpha), -sin(alpha)*d],
+     [sin(q)* sin(alpha), cos(q)*sin(alpha), cos(alpha), cos(alpha)*d],
+     [0,0,0,1]])
+    return TF
 ```
-To run projects from this repository you need version 7.7.0+
-If your gazebo version is not 7.7.0+, perform the update as follows:
-```sh
-$ sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
-$ wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-$ sudo apt-get update
-$ sudo apt-get install gazebo7
+Sympy's `.subs` method was used in order to create the appropriate transformation matrices for each joint"
+
+```python
+  T0_1 = TF_Matrix(alpha0, a0, d1, q1).subs(DH_Table)
+  T1_2 = TF_Matrix(alpha1, a1, d2, q2).subs(DH_Table)
+  T2_3 = TF_Matrix(alpha2, a2, d3, q3).subs(DH_Table)
+  T3_4 = TF_Matrix(alpha3, a3, d4, q4).subs(DH_Table)
+  T4_5 = TF_Matrix(alpha4, a4, d5, q5).subs(DH_Table)
+  T5_6 = TF_Matrix(alpha5, a5, d6, q6).subs(DH_Table)
+  T6_EE = TF_Matrix(alpha6, a6, d7, q7).subs(DH_Table)
+```
+The following are the produced transformation matrices:
+Joint 1 `T0_1`:
+```python
+[[cos(q1), -sin(q1), 0, 0],
+[sin(q1), cos(q1), 0, 0],
+[0, 0, 1, 0.75],
+[0, 0, 0, 1]]
+```
+Joint 2 `T1_2`:
+```python
+[[cos(q2 - 0.5*pi), -sin(q2 - 0.5*pi), 0, 0.35],
+[0, 0, 1, 0],
+[-sin(q2 - 0.5*pi), -cos(q2 - 0.5*pi), 0, 0],
+[0, 0, 0, 1]]
+```
+Joint 3 `T2_3`:
+```python
+[[cos(q3), -sin(q3), 0, 1.25],
+[sin(q3), cos(q3), 0, 0],
+[0, 0, 1, 0],
+[0, 0, 0, 1]]
+```
+Joint 4 `T3_4`:
+```python
+[[cos(q4), -sin(q4), 0, -0.054],
+[0, 0, 1, 1.5],
+[-sin(q4), -cos(q4), 0, 0],
+[0, 0, 0, 1]]
 ```
 
-Once again check if the correct version was installed:
-```sh
-$ gazebo --version
-```
-### For the rest of this setup, catkin_ws is the name of active ROS Workspace, if your workspace name is different, change the commands accordingly
-
-If you do not have an active ROS workspace, you can create one by:
-```sh
-$ mkdir -p ~/catkin_ws/src
-$ cd ~/catkin_ws/
-$ catkin_make
+Joint 5 `T4_5`
+```python
+[[cos(q5), -sin(q5), 0, 0],
+[0, 0, -1, 0],
+[sin(q5), cos(q5), 0, 0],
+[0, 0, 0, 1]]
 ```
 
-Now that you have a workspace, clone or download this repo into the **src** directory of your workspace:
-```sh
-$ cd ~/catkin_ws/src
-$ git clone https://github.com/udacity/RoboND-Kinematics-Project.git
+Joint 6 `T5_6`
+```python
+[[cos(q6), -sin(q6), 0, 0],
+[0, 0, 1, 0],
+[-sin(q6), -cos(q6), 0, 0],
+[0, 0, 0, 1]]
+```
+Joint 7 aka End Effector `T6_EE`
+```python
+[[1, 0, 0, a6],
+[0, 1, 0, 0],
+[0, 0, 1, 0.303],
+[0, 0, 0, 1]]
+```
+The resulting transformation matrix is as follow:
+
+```python
+T0_EE = simplify(T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_EE)
+```
+After substitution for of `0` for all thetas the resulting matrix for the arm at origin position is as follow:
+```python
+[[0, 0, 1, 2.153],
+[0, -1, 0, 0],
+[1, 0, 0, 1.946],
+[0, 0, 0, 1]]
 ```
 
-Now from a terminal window:
+#### 3. Decouple Inverse Kinematics problem into Inverse Position Kinematics and inverse Orientation Kinematics; doing so derive the equations to calculate all individual joint angles.
+##### 1 - Inverse Position Kinematics
+In order to solve the inverse position kinematics, we need to solve for the position of the spherical wrist center by using the end effectors position and orientation.  End effector position can be calculated by determining the symbolic rotation matrices.
+```python
+r, p , y = symbols('r p y')
 
-```sh
-$ cd ~/catkin_ws
-$ rosdep install --from-paths src --ignore-src --rosdistro=kinetic -y
-$ cd ~/catkin_ws/src/RoboND-Kinematics-Project/kuka_arm/scripts
-$ sudo chmod +x target_spawn.py
-$ sudo chmod +x IK_server.py
-$ sudo chmod +x safe_spawner.sh
+ROT_x = Matrix([[1, 0 , 0],
+[0, cos(r), -sin(r)],
+[0, sin(r), cos(r)]]) # ROLL
+
+ROT_y = Matrix([
+[cos(p), 	0 , 	sin(p)],
+[0, 		1, 	0],
+[-sin(p), 	0, 	cos(p)]]) # PITCH
+
+ROT_z = Matrix([[cos(y), -sin(y), 0],
+[sin(y), cos(y), 0],
+[0, 0, 1]]) # YAW
+
+ROT_EE = simplify(ROT_z * ROT_y * ROT_x)
 ```
-Build the project:
-```sh
-$ cd ~/catkin_ws
-$ catkin_make
+Next, we extract end effector rotation and position:
+```python
+px = req.poses[x].position.x
+py = req.poses[x].position.y
+pz = req.poses[x].position.z
+
+(roll, pitch, yaw) = tf.transformations.euler_from_quaternion([req.poses[x].orientation.x, req.poses[x].orientation.y, req.poses[x].orientation.z, req.poses[x].orientation.w])
 ```
-
-Add following to your .bashrc file
+We now calculate the position and orientation of the end effector wrist center
+```python
+ROT_EE = ROT_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
+EE = Matrix([[px], [py], [pz]])
+WC = EE - (0.303) * ROT_EE[:,2] 
 ```
-export GAZEBO_MODEL_PATH=~/catkin_ws/src/RoboND-Kinematics-Project/kuka_arm/models
+##### 2 - Inverse Orientation Kinematics
 
-source ~/catkin_ws/devel/setup.bash
+##### thetha1
+We use previously obtained wrist center information to determine thetha1
+```python
+theta1 = atan2(WC[1],WC[0])
 ```
+##### theta2
 
-For demo mode make sure the **demo** flag is set to _"true"_ in `inverse_kinematics.launch` file under /RoboND-Kinematics-Project/kuka_arm/launch
+![alt text][image7]
 
-In addition, you can also control the spawn location of the target object in the shelf. To do this, modify the **spawn_location** argument in `target_description.launch` file under /RoboND-Kinematics-Project/kuka_arm/launch. 0-9 are valid values for spawn_location with 0 being random mode.
+```python
+side_a = A from figure
+side_b = B from figure
+side_c = C from figure
 
-You can launch the project by
-```sh
-$ cd ~/catkin_ws/src/RoboND-Kinematics-Project/kuka_arm/scripts
-$ ./safe_spawner.sh
+side_a = 1.501
+side_b = sqrt(pow((sqrt(WC[0] * WC[0] + WC[1] * WC[1]) - 0.35), 2) + pow((WC[2] -0.75),2))
+side_c = 1.25
+
+angle_a = acos((side_b * side_b + side_c * side_c - side_a * side_a) / (2 * side_b * side_c))
+angle_b = acos((side_a * side_a + side_c * side_c - side_b * side_b) / (2 * side_a * side_c))
+angle_c = acos((side_a * side_a + side_b * side_b - side_c * side_c) / (2 * side_a * side_b))
+
+theta2 = pi/2. - angle_a - atan2(WC[2] - 0.75, sqrt(WC[0] + WC[1] * WC[1]) - 0.35)
 ```
-
-If you are running in demo mode, this is all you need. To run your own Inverse Kinematics code change the **demo** flag described above to _"false"_ and run your code (once the project has successfully loaded) by:
-```sh
-$ cd ~/catkin_ws/src/RoboND-Kinematics-Project/kuka_arm/scripts
-$ rosrun kuka_arm IK_server.py
+##### theta3
+```python
+theta3 = pi/2. - (angle_b + 0.036) # 0.036 accounts for sag in link4 of -0.054m
 ```
-Once Gazebo and rviz are up and running, make sure you see following in the gazebo world:
+In order to calculate the remaining thetas, we need to consider an extrinsic rotation sequence. To do so we calculate the rotation matrices as follow:
+```python
+R0_3 = T0_1[0:3,0:3] * T1_2[0:3,0:3] * T2_3[0:3,0:3]
+R0_3 = R0_3.evalf(subs={q1: theta1, q2:theta2, q3: theta3})
+```
+The inverse or the rotation matrix is also its transpose as it is an orthogonal matrix. 
+```python
+R3_6 = R0_3.transpose() * ROT_EE
+```
+We then calculate the remaining thetas:
+```python
+theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+theta5 = atan2(sqrt(R3_6[0,2]*R3_6[0,2] + R3_6[2,2] * R3_6[2,2]), R3_6[1,2])
+theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+```
+### Project Implementation
 
-	- Robot
-	
-	- Shelf
-	
-	- Blue cylindrical target in one of the shelves
-	
-	- Dropbox right next to the robot
-	
-
-If any of these items are missing, report as an issue.
-
-Once all these items are confirmed, open rviz window, hit Next button.
-
-To view the complete demo keep hitting Next after previous action is completed successfully. 
-
-Since debugging is enabled, you should be able to see diagnostic output on various terminals that have popped up.
-
-The demo ends when the robot arm reaches at the top of the drop location. 
-
-There is no loopback implemented yet, so you need to close all the terminal windows in order to restart.
-
-In case the demo fails, close all three terminal windows and rerun the script.
-
+#### 1. Fill in the `IK_server.py` file with properly commented python code for calculating Inverse Kinematics based on previously performed Kinematic Analysis. Your code must guide the robot to successfully complete 8/10 pick and place cycles. Briefly discuss the code you implemented and your results. 
+To compute and print matrices we used `IK_debug.py`. This program was a useful as it quickly allowed the testing of the calculating values.
+Once we ran the simulation and moved our results to the `IK_server.py` it was noticed that the VM lags at certain steps. The longest time was spent during the IK calculations. Although this takes some time in my current computer configurations, it is still successful at picking up the cylindrical pieces from any location on the shell and dropping it its destined location.
+![alt text][image4]
+# LINK TO YOUTUBE VIDEO
