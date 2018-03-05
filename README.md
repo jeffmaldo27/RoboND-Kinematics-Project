@@ -216,4 +216,4 @@ To compute and print matrices we used `IK_debug.py`. This program was a useful a
 Once we ran the simulation and moved our results to the `IK_server.py` it was noticed that the VM lags at certain steps. The longest time was spent during the IK calculations. Although this takes some time in my current computer configurations, it is still successful at picking up the cylindrical pieces from any location on the shell and dropping it its destined location.
 ![alt text][image4]
 A video to this project can be found below:
-[![alt_text](./misc/misc8.png)](https://youtu.be/BEthpXdtYLo)
+[![alt_text](./misc_images/misc8.png)](https://youtu.be/BEthpXdtYLo)
