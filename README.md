@@ -19,6 +19,7 @@ The purpose of this project was to calculate and program joint angles for a six 
 ![alt text][image6]
 
 Reference frame assignments in URDF file:
+
 Joint Name | Parent Link | Child Link | x(m) | y(m) | z(m)
 --- | --- | --- | --- | --- | ---
 joint_1 | base_link | link_1 | 0 | 0 | 0.33
@@ -30,6 +31,7 @@ joint_6 | link_5 | link_6 | 0.193 | 0 | 0
 gripper-joint | link_6 | gripper_link | 0.11 | 0 | 0
 
 DH Parameters table obtained:
+
 Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
 --- | --- | --- | --- | ---
 0->1 | 0 | 0 | - | q1
