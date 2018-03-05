@@ -1,11 +1,11 @@
 [//]: # (Image References)
-[image1]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc1.png?raw=true
-[image2]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc2.png?raw=tru
-[image3]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc3.png?raw=true
-[image4]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc4.PNG?raw=true
-[image5]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc5.png?raw=true
-[image6]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc6.png?raw=true
-[image7]: https://github.com/jeffmaldo27/RoboND-Kinematics-Project/blob/master/misc_images/misc7.png?raw=true
+[image1]: ./misc_images/misc1.png
+[image2]: ./misc_images/misc2.png
+[image3]: ./misc_images/misc3.png
+[image4]: ./misc_images/misc4.PNG
+[image5]: ./misc_images/misc5.png
+[image6]: ./misc_images/misc6.png
+[image7]: ./misc_images/misc7.png
 
 ## Project: Kinematics Pick & Place
 ![alt text][image2]
@@ -166,8 +166,8 @@ WC = EE - (0.303) * ROT_EE[:,2]
 ```
 ##### 2 - Inverse Orientation Kinematics
 
-##### thetha1
-We use previously obtained wrist center information to determine thetha1
+##### theta1
+We use previously obtained wrist center information to determine theta1
 ```python
 theta1 = atan2(WC[1],WC[0])
 ```
@@ -215,4 +215,5 @@ theta6 = atan2(-R3_6[1,1], R3_6[1,0])
 To compute and print matrices we used `IK_debug.py`. This program was a useful as it quickly allowed the testing of the calculating values.
 Once we ran the simulation and moved our results to the `IK_server.py` it was noticed that the VM lags at certain steps. The longest time was spent during the IK calculations. Although this takes some time in my current computer configurations, it is still successful at picking up the cylindrical pieces from any location on the shell and dropping it its destined location.
 ![alt text][image4]
-# LINK TO YOUTUBE VIDEO
+A video to this project can be found below:
+[![alt_text](./misc/misc8.png)](https://youtu.be/BEthpXdtYLo)
