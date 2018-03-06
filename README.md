@@ -32,15 +32,15 @@ gripper-joint | link_6 | gripper_link | 0.11 | 0 | 0
 
 DH Parameters table obtained:
 
-Links | alpha(i-1) | a(i-1) | d(i-1) | theta(i)
+i | α(i-1) | a(i-1) | d(i) | θ(i)
 --- | --- | --- | --- | ---
-0->1 | 0 | 0 | - | q1
-1->2 | - pi/2 | 0.35 | 0.75 | -pi/2 + q2
-2->3 | 0 | 1.25 | 0 | q3
-3->4 |  -pi/2 | -0.054 | 0 | q4
-4->5 | pi/2 | 0 | 1.5 | q5
-5->6 | -pi/2 | 0 | 0 | q6
-6->EE | 0 | 0 | 0.303 | 0
+0 | 0 | 0 | - | -
+1 | - 90 | 0.35 | 0.75 | θ1
+2 | 0 | 1.25 | 0 | θ2
+3 |  -90 | -0.054 | 0 | θ3
+4 | 90 | 0 | 1.5 | θ4
+5 | -90 | 0 | 0 | θ5
+6 | 0 | 0 | 0.303 | θ6
 
 By looking at the kr210.urdf.xacro file we need to determine which relative offset definition between the joints in the urdf file corresponds to their respective DH-parameter. We then extract the DH parameters and anotate them on the table.
 
@@ -132,8 +132,8 @@ After substitution for of `0` for all thetas the resulting matrix for the arm at
 ```
 
 #### 3. Decouple Inverse Kinematics problem into Inverse Position Kinematics and inverse Orientation Kinematics; doing so derive the equations to calculate all individual joint angles.
+The Kuka KR210’s last three revolute joints of have the same origin and form a spherical "wrist" joint. This allows us to decouple the calculation into two portions, The position kinematics of the wrist center and the orientation kinematics.
 ##### 1 - Inverse Position Kinematics
-In order to solve the inverse position kinematics, we need to solve for the position of the spherical wrist center by using the end effectors position and orientation.  End effector position can be calculated by determining the symbolic rotation matrices.
 ```python
 r, p , y = symbols('r p y')
 
@@ -151,6 +151,10 @@ ROT_z = Matrix([[cos(y), -sin(y), 0],
 [0, 0, 1]]) # YAW
 
 ROT_EE = simplify(ROT_z * ROT_y * ROT_x)
+
+Rot_Error = ROT_z.subs(y, radians(180)) * ROT_y.subs(p, radians(-90))
+
+ROT_EE = simplify(ROT_EE * Rot_Error)
 ```
 Next, we extract end effector rotation and position:
 ```python
